@@ -46,10 +46,10 @@ impl Server<HttpListener> {
 
 impl<L: NetworkListener<S, A>, S: NetworkStream, A: NetworkAcceptor<S>> Server<L> {
     /// Binds to a socket, and starts handling connections.
-    ///
-    /// This method has unbound type parameters, so can be used when you want to use
-    /// something other than the provided HttpStream, HttpAcceptor, and HttpListener.
-    pub fn listen_network<H, S, A, L>(self, handler: H) -> HttpResult<Listening<A>>
+    pub fn listen<H,
+                  S = HttpStream,
+                  A = HttpAcceptor,
+                  L = HttpListener>(self, handler: H) -> HttpResult<Listening<A>>
     where H: Handler<A, S>,
           S: NetworkStream,
           A: NetworkAcceptor<S>,
@@ -78,11 +78,6 @@ impl<L: NetworkListener<S, A>, S: NetworkStream, A: NetworkAcceptor<S>> Server<L
             acceptors: acceptors,
             sockets: sockets,
         })
-    }
-
-    /// Binds to a socket and starts handling connections.
-    pub fn listen<H: Handler<HttpAcceptor, HttpStream>>(self, handler: H) -> HttpResult<Listening<HttpAcceptor>> {
-        self.listen_network::<H, HttpStream, HttpAcceptor, HttpListener>(handler)
     }
 }
 
