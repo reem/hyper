@@ -5,12 +5,14 @@ use std::u16;
 
 use url::Url;
 
-use method;
-use status;
-use uri;
 use version::{HttpVersion, Http09, Http10, Http11, Http20};
 use {HttpResult, HttpMethodError, HttpVersionError, HttpIoError, HttpUriError};
 use {HttpHeaderError, HttpStatusError};
+
+pub mod method;
+pub mod status;
+pub mod version;
+pub mod uri;
 
 /// Readers to handle different Transfer-Encodings.
 ///

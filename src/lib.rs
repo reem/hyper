@@ -137,16 +137,23 @@ extern crate typeable;
 
 pub use std::io::net::ip::{SocketAddr, IpAddr, Ipv4Addr, Ipv6Addr, Port};
 pub use mimewrapper::mime;
+
+use std::fmt;
+use std::io::IoError;
+use std::rt::backtrace;
+
+// Unified interfaces.
+pub use raw::method;
+pub use raw::status;
+pub use raw::uri;
+pub use raw::version;
+pub use raw::net;
+pub use raw::http;
+
 pub use url::Url;
 pub use method::{Get, Head, Post, Delete};
 pub use status::{Ok, BadRequest, NotFound};
 pub use server::Server;
-
-use std::fmt;
-use std::io::IoError;
-
-use std::rt::backtrace;
-
 
 macro_rules! try_io(
     ($e:expr) => (match $e { Ok(v) => v, Err(e) => return Err(::HttpIoError(e)) })
@@ -158,6 +165,25 @@ macro_rules! todo(
     })
 )
 
+macro_rules! trace(
+    ($($arg:tt)*) => (if cfg!(not(ndebug)) {
+        format_args!(|args| log!(5, "{}\n{}", args, ::Trace), $($arg)*)
+    })
+)
+
+// Raw interfaces for header, client, and server.
+pub mod raw;
+
+// Non-raw interfaces.
+pub mod client;
+pub mod header;
+pub mod server;
+
+mod mimewrapper {
+    /// Re-exporting the mime crate, for convenience.
+    extern crate mime;
+}
+
 #[allow(dead_code)]
 struct Trace;
 
@@ -167,29 +193,6 @@ impl fmt::Show for Trace {
         ::std::result::Ok(())
     }
 }
-
-macro_rules! trace(
-    ($($arg:tt)*) => (if cfg!(not(ndebug)) {
-        format_args!(|args| log!(5, "{}\n{}", args, ::Trace), $($arg)*)
-    })
-)
-
-pub mod client;
-pub mod method;
-pub mod header;
-pub mod http;
-pub mod net;
-pub mod server;
-pub mod status;
-pub mod uri;
-pub mod version;
-
-
-mod mimewrapper {
-    /// Re-exporting the mime crate, for convenience.
-    extern crate mime;
-}
-
 
 /// Result type often returned from methods that can have `HttpError`s.
 pub type HttpResult<T> = Result<T, HttpError>;
@@ -208,7 +211,7 @@ pub enum HttpError {
     /// An invalid `Status`, such as `1337 ELITE`.
     HttpStatusError,
     /// An `IoError` that occured while trying to read or write to a network stream.
-    HttpIoError(IoError),
+    HttpIoError(IoError)
 }
 
 //FIXME: when Opt-in Built-in Types becomes a thing, we can force these structs
@@ -219,4 +222,10 @@ fn _assert_send<T: Send>() {
 
     _assert_send::<server::Request>();
     _assert_send::<server::Response<net::Fresh>>();
+
+    _assert_send::<raw::client::Request>();
+    _assert_send::<raw::client::Response>();
+
+    _assert_send::<raw::server::Request>();
+    _assert_send::<raw::server::Response>();
 }
